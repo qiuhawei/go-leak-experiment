@@ -19,8 +19,8 @@ spec:
         app: go-leak
     spec:
       containers:
-        - name: app
-          image: go-leak:latest
+        - name: go-leak
+          image: ghcr.io/qiuhawei/go-leak:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 6061
@@ -36,3 +36,4 @@ spec:
   ports:
     - port: 80
       targetPort: 6061
+      protocol: TCP
