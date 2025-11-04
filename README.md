@@ -8,3 +8,4 @@
 ./deploy-local.sh
 kubectl port-forward svc/go-leak -n leak-lab 6061:80
 curl http://localhost:6061
+# go-leak-experiment
