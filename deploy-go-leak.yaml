@@ -18,12 +18,43 @@ spec:
       labels:
         app: go-leak
     spec:
+      # 注意：仅在实验/测试命名空间使用 privileged / SYS_PTRACE
       containers:
         - name: go-leak
           image: ghcr.io/qiuhawei/go-leak:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 6061
+          # 给主容器添加 ptrace 能力，方便 gcore/gdb 等工具使用
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - SYS_PTRACE
+          volumeMounts:
+            - name: pprof-storage
+              mountPath: /tmp/pprof
+        # 可选：长期/周期性采样的 sidecar（pprof-agent）
+        - name: pprof-agent
+          image: nicolaka/netshoot:latest
+          imagePullPolicy: IfNotPresent
+          # 使用一个简单的循环脚本，每 60s 抓取一次 heap（文件以时间戳命名）
+          command:
+            - /bin/bash
+            - -c
+            - |
+              mkdir -p /tmp/pprof && \
+              while true; do
+                ts=$(date +%s)
+                curl -sS --max-time 10 "http://localhost:6061/debug/pprof/heap" -o /tmp/pprof/heap-${ts}.out || echo "curl failed at ${ts}"
+                sleep 60
+              done
+          volumeMounts:
+            - name: pprof-storage
+              mountPath: /tmp/pprof
+      volumes:
+        - name: pprof-storage
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
